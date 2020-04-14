@@ -27,6 +27,16 @@ variable "location" {
   description = "The Azure region where the resources will be created."
 }
 
+variable "docker_username" {
+  type        = string
+  description = "The username for accessing the container registry."
+}
+
+variable "docker_password" {
+  type        = string
+  description = "The password for accessing the container registry."
+}
+
 locals {
   base_name = "${var.name_prefix}-${var.name_base}-${var.name_suffix}"
 }
@@ -55,37 +65,33 @@ resource "azurerm_app_service" "appsvc" {
   resource_group_name = azurerm_resource_group.group.name
   location            = azurerm_resource_group.group.location
   app_service_plan_id = azurerm_app_service_plan.plan.id
-
-#   app_settings = merge(var.environment-variables, {
-#     "DOCKER_REGISTRY_SERVER_USERNAME" = var.docker-registry-username,
-#     "DOCKER_REGISTRY_SERVER_PASSWORD" = var.docker-registry-password,
-#     "DOCKER_REGISTRY_SERVER_URL"      = "https://${var.docker-registry-url}",
-#   })
-
-  app_settings = {
-    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
-    DOCKER_REGISTRY_SERVER_URL          = "https://mcr.microsoft.com"
-    DOCKER_CUSTOM_IMAGE_NAME            = "https://mcr.microsoft.com/azure-app-service/samples/aspnethelloworld:latest"
-    DOCKER_REGISTRY_SERVER_USERNAME     = ""
-    DOCKER_REGISTRY_SERVER_PASSWORD     = ""
-  }
-
-#   site_config {
-#     windows_fx_version = "DOCKER|${var.imageAndTag}"
-#   }
   
   site_config {
-    always_on        = true
+    always_on          = true
     windows_fx_version = "DOCKER|mcr.microsoft.com/azure-app-service/samples/aspnethelloworld:latest"
+    # windows_fx_version = "DOCKER|cdwms.azurecr.io/aspnethelloworld:latest"
   }
   
-  lifecycle {
-    ignore_changes = [
-      app_settings.DOCKER_CUSTOM_IMAGE_NAME,
-      site_config.0.linux_fx_version,
-      site_config.0.scm_type
-    ]
+  app_settings = {
+
+    DOCKER_CUSTOM_IMAGE_NAME            = "https://mcr.microsoft.com/azure-app-service/samples/aspnethelloworld:latest"
+    DOCKER_REGISTRY_SERVER_URL          = "https://mcr.microsoft.com"
+
+    # DOCKER_CUSTOM_IMAGE_NAME            = "https://cdwms.azurecr.io/aspnethelloworld:latest"
+    # DOCKER_REGISTRY_SERVER_URL          = "https://cdwms.azurecr.io"
+    # DOCKER_REGISTRY_SERVER_USERNAME     = var.docker_username
+    # DOCKER_REGISTRY_SERVER_PASSWORD     = var.docker_password
+
+    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
   }
+  
+#   lifecycle {
+#     ignore_changes = [
+#       app_settings.DOCKER_CUSTOM_IMAGE_NAME,
+#       site_config.0.linux_fx_version,
+#       site_config.0.scm_type
+#     ]
+#   }
 
   # identity {
   #   type = "SystemAssigned"
